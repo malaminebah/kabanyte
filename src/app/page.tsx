@@ -1,18 +1,23 @@
+"use client";
+
+import { useState } from "react";
 import Board from "@/components/Board";
-import Navbar from "@/components/Nav/NavBar"
-import Sidebar from "@/components/SideBar";
+import BoardList from "@/components/BoardList";
 
 export default function Home() {
-  return (
-    <div >
-      <Navbar />
-      <Sidebar />
-      <main>
-      <Board />
-      </main>
-      <footer >
+  const [selectedBoardId, setSelectedBoardId] = useState("1");
 
-      </footer>
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="flex">
+        <BoardList
+          selectedBoardId={selectedBoardId}
+          onSelectBoard={setSelectedBoardId}
+        />
+        <div className="flex-1">
+          <Board boardId={selectedBoardId} />
+        </div>
+      </div>
     </div>
   );
 }
