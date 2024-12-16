@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { FaPlusCircle, FaThLarge, FaThList } from "react-icons/fa";
 import { FaCircleMinus, FaTrash } from "react-icons/fa6";
 import ThemeToggle from "@/components/ThemeToggle";
+import AssigneeSelector from "./AssigneeSelector";
 
 const LABELS = {
   FRONT: { id: 'front', text: 'Frontend', color: 'bg-sky-400 dark:bg-sky-500' },
@@ -22,6 +23,12 @@ type Attachment = {
   type: string;
 };
 
+type User = {
+  id: string;
+  name: string;
+  avatar: string;
+};
+
 type Card = {
   id: string;
   title: string;
@@ -30,6 +37,7 @@ type Card = {
   boardId: string;
   labels: LabelType[];
   attachments: Attachment[];
+  assignees: User[];
 };
 
 type Column = {
@@ -38,14 +46,27 @@ type Column = {
   boardId: string;
 };
 
+const USERS: User[] = [
+  { id: '1', name: 'John Doe', avatar: '👨‍💻' },
+  { id: '2', name: 'Jane Smith', avatar: '👩‍💼' },
+  { id: '3', name: 'Bob Johnson', avatar: '👨‍🚀' },
+  { id: '4', name: 'Alice Brown', avatar: '👩‍🔬' },
+];
+
 function CardModal({ card, onClose, onSave }: {
   card: Card;
   onClose: () => void;
-  onSave: (cardId: string, updates: { description: string; labels: LabelType[]; attachments: Attachment[] }) => void;
+  onSave: (cardId: string, updates: { 
+    description: string; 
+    labels: LabelType[]; 
+    attachments: Attachment[];
+    assignees: User[];
+  }) => void;
 }) {
   const [editedDescription, setEditedDescription] = useState(card.description);
   const [selectedLabels, setSelectedLabels] = useState<LabelType[]>(card.labels || []);
   const [attachments, setAttachments] = useState<Attachment[]>(card.attachments || []);
+  const [selectedAssignees, setSelectedAssignees] = useState<User[]>(card.assignees || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleLabel = (label: LabelType) => {
@@ -55,6 +76,7 @@ function CardModal({ card, onClose, onSave }: {
         : [...prev, label]
     );
   };
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -111,6 +133,24 @@ function CardModal({ card, onClose, onSave }: {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Assignés
+          </label>
+          <AssigneeSelector
+            assignees={selectedAssignees}
+            onAssigneeChange={setSelectedAssignees}
+            users={USERS}
+            onAddNewUser={(newUser) => {
+              const user: User = {
+                id: Date.now().toString(),
+                ...newUser
+              };
+              USERS.push(user);
+            }}
+          />
         </div>
 
         <div className="mb-6">
@@ -185,7 +225,8 @@ function CardModal({ card, onClose, onSave }: {
               onSave(card.id, {
                 description: editedDescription,
                 labels: selectedLabels,
-                attachments: attachments
+                attachments: attachments,
+                assignees: selectedAssignees
               });
               onClose();
             }}
@@ -224,11 +265,12 @@ export default function Board({ boardId }: { boardId: string }) {
       columnId: "todo", 
       boardId, 
       labels: [],
-      attachments: [] 
+      attachments: [],
+      assignees: [] 
     },
-    { id: "2", title: "Tâche 2", description: "Description 2", columnId: "inProgress", boardId, labels: [], attachments: [] },
-    { id: "3", title: "Tâche 3", description: "Description 3", columnId: "done", boardId, labels: [], attachments: [] },
-    { id: "4", title: "Tâche 4", description: "Description 4", columnId: "review", boardId, labels: [], attachments: [] },
+    { id: "2", title: "Tâche 2", description: "Description 2", columnId: "inProgress", boardId, labels: [], attachments: [], assignees: [] },
+    { id: "3", title: "Tâche 3", description: "Description 3", columnId: "done", boardId, labels: [], attachments: [], assignees: [] },
+    { id: "4", title: "Tâche 4", description: "Description 4", columnId: "review", boardId, labels: [], attachments: [], assignees: [] },
   ]);
 
   const filteredColumns = columns.filter(column => column.boardId === boardId);
@@ -258,6 +300,7 @@ export default function Board({ boardId }: { boardId: string }) {
         boardId,
         labels: [],
         attachments: [],
+        assignees: [],
       };
       setCards([...cards, newCard]);
       setNewCardTitle("");
@@ -289,7 +332,7 @@ export default function Board({ boardId }: { boardId: string }) {
 
   const handleSaveCardModal = (
     cardId: string, 
-    updates: { description: string; labels: LabelType[]; attachments: Attachment[] }
+    updates: { description: string; labels: LabelType[]; attachments: Attachment[]; assignees: User[] }
   ) => {
     setCards(cards.map(card => 
       card.id === cardId 
@@ -453,6 +496,27 @@ export default function Board({ boardId }: { boardId: string }) {
                             </span>
                           ))}
                         </div>
+                        {card.assignees?.length > 0 && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex -space-x-2">
+                              {card.assignees.slice(0, 3).map(user => (
+                                <div
+                                  key={user.id}
+                                  className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center
+                                            text-sm border-2 border-white dark:border-gray-800"
+                                  title={user.name}
+                                >
+                                  {user.avatar}
+                                </div>
+                              ))}
+                            </div>
+                            {card.assignees.length > 3 && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                +{card.assignees.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <p className="text-sm text-slate-600 dark:text-gray-300 mt-1">
                           {card.description}
                         </p>
