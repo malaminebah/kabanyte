@@ -2,17 +2,27 @@
 
 import { useState } from "react";
 import { FaCircleMinus } from "react-icons/fa6";
-import { LABELS, type LabelType, type Card } from "@/types";
+import AssigneeSelector from "./AssigneeSelector";
+import { LABELS, type LabelType, type Card, type Attachment } from "@/types";
+import { User } from "@/data/users";
 
 type CardModalProps = {
   card: Card;
   onClose: () => void;
-  onSave: (cardId: string, updates: { description: string; labels: LabelType[] }) => void;
+  onSave: (cardId: string, updates: { 
+    description: string; 
+    labels: LabelType[]; 
+    attachments: Attachment[];
+    assignees: User[];
+  }) => void;
+  users: User[];
 };
 
-export default function CardModal({ card, onClose, onSave }: CardModalProps) {
+export default function CardModal({ card, onClose, onSave, users }: CardModalProps) {
   const [editedDescription, setEditedDescription] = useState(card.description);
   const [selectedLabels, setSelectedLabels] = useState<LabelType[]>(card.labels || []);
+  const [selectedAssignees, setSelectedAssignees] = useState<User[]>(card.assignees || []);
+  const [attachments] = useState<Attachment[]>(card.attachments || []);
 
   const toggleLabel = (label: LabelType) => {
     setSelectedLabels(prev => 
@@ -55,6 +65,24 @@ export default function CardModal({ card, onClose, onSave }: CardModalProps) {
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Assignés
+          </label>
+          <AssigneeSelector
+            assignees={selectedAssignees}
+            onAssigneeChange={setSelectedAssignees}
+            users={users}
+            onAddNewUser={(newUser) => {
+              const user: User = {
+                id: Date.now().toString(),
+                ...newUser
+              };
+              users.push(user);
+            }}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Description
           </label>
           <textarea
@@ -78,7 +106,9 @@ export default function CardModal({ card, onClose, onSave }: CardModalProps) {
             onClick={() => {
               onSave(card.id, {
                 description: editedDescription,
-                labels: selectedLabels
+                labels: selectedLabels,
+                attachments: attachments,
+                assignees: selectedAssignees
               });
               onClose();
             }}
